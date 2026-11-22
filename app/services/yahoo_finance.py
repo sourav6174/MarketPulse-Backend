@@ -23,10 +23,9 @@ def set_cached_data(key, data):
     }
 
 def clean_number(value):
-    if pd.isna(value):
+    if value is None or pd.isna(value):
         return None
     return round(float(value), 2)
-
 def format_timestamp(value):
     timestamp = pd.Timestamp(value)
     if timestamp.tzinfo is None:
@@ -44,8 +43,9 @@ def fetch_single_index(index_id, config, force_refresh=False):
     symbol = config["symbol"]
     try:
         ticker = yf.Ticker(symbol)
-        # Get daily history for the latest available
-        # trading session and previous close.
+        # --------------------------------------------------
+        # 1. FETCH DAILY HISTORY
+        # --------------------------------------------------
         daily = ticker.history(
             period="1mo",
             interval="1d",
@@ -54,25 +54,44 @@ def fetch_single_index(index_id, config, force_refresh=False):
             timeout=20,
             raise_errors=True
         )
-        # Remove rows where closing price is unavailable.
-        daily = daily.dropna(subset=['Close'])
         if daily.empty or "Close" not in daily.columns:
-            raise ValueError("No daily closing data returned.")
+            raise ValueError("No daily historical data returned.")
+
         daily = daily.dropna(subset=["Close"])
+        daily = daily.sort_index()
         if len(daily) < 2:
             raise ValueError(
-                f"Insufficient daily history for {config['symbol']}. "
+                f"Insufficient daily history for {symbol}. "
                 f"Rows received: {len(daily)}"
             )
+        latest_daily = daily.iloc[-1]
         latest_daily_date = pd.Timestamp(
             daily.index[-1]
         ).date()
         previous_close = float(daily["Close"].iloc[-2])
-        current_value = float(daily["Close"].iloc[-1])
+
+        # --------------------------------------------------
+        # 2. INITIALIZE OHLC USING DAILY DATA
+        # --------------------------------------------------
+
+        current_open = latest_daily.get("Open")
+        current_high = latest_daily.get("High")
+        current_low = latest_daily.get("Low")
+        current_value = latest_daily["Close"]
+
+        current_open = clean_number(current_open)
+        current_high = clean_number(current_high)
+        current_low = clean_number(current_low)
+        current_value = float(current_value)
+
         timestamp = format_timestamp(daily.index[-1])
+
         price_type = "daily_close"
 
-        # Try to obtain the latest intraday observation.
+        # --------------------------------------------------
+        # 3. FETCH INTRADAY DATA
+        # --------------------------------------------------
+
         try:
             intraday = ticker.history(
                 period="1d",
@@ -84,28 +103,70 @@ def fetch_single_index(index_id, config, force_refresh=False):
             )
             if not intraday.empty and "Close" in intraday.columns:
                 intraday = intraday.dropna(subset=["Close"])
+                intraday = intraday.sort_index()
                 if not intraday.empty:
-                    latest = intraday.iloc[-1]
                     intraday_date = pd.Timestamp(
                         intraday.index[-1]
                     ).date()
 
-                    # Only use intraday data when it belongs
+                    # Only use intraday data belonging
                     # to the latest daily trading session.
+
                     if intraday_date == latest_daily_date:
-                        current_value = float(latest["Close"])
+                        # Latest available candle
+                        latest_candle = intraday.iloc[-1]
+                        # OPEN: First available candle opening price
+                        if "Open" in intraday.columns:
+                            valid_open = intraday["Open"].dropna()
+                            if not valid_open.empty:
+                                current_open = clean_number(
+                                    valid_open.iloc[0]
+                                )
+                        # HIGH: Highest value during the session
+                        if "High" in intraday.columns:
+                            valid_high = intraday["High"].dropna()
+                            if not valid_high.empty:
+                                current_high = clean_number(
+                                    valid_high.max()
+                                )
+                        # LOW: Lowest value during the session
+                        if "Low" in intraday.columns:
+                            valid_low = intraday["Low"].dropna()
+                            if not valid_low.empty:
+                                current_low = clean_number(
+                                    valid_low.min()
+                                )
+                        # CLOSE: Latest available candle closing price
+                        current_value = float(
+                            latest_candle["Close"]
+                        )
                         timestamp = format_timestamp(
                             intraday.index[-1]
                         )
                         price_type = "intraday_5m"
+        except Exception as intraday_error:
+            # Keep daily OHLC values if intraday
+            # data is unavailable.
+            print(
+                f"Intraday data unavailable for {symbol}: "
+                f"{intraday_error}"
+            )
 
-        except Exception:
-            # Daily closing data remains the fallback.
-            pass
+        # --------------------------------------------------
+        # 4. CALCULATE CHANGE AND CHANGE PERCENTAGE
+        # --------------------------------------------------
+
         if previous_close == 0:
             raise ValueError("Previous close cannot be zero.")
         change = current_value - previous_close
-        change_percent = (change / previous_close) * 100
+        change_percent = (
+            change / previous_close
+        ) * 100
+
+        # --------------------------------------------------
+        # 5. PREPARE FINAL RESPONSE
+        # --------------------------------------------------
+
         result = {
             "id": index_id,
             "name": config["name"],
@@ -114,6 +175,12 @@ def fetch_single_index(index_id, config, force_refresh=False):
             "featured": config["featured"],
 
             "value": clean_number(current_value),
+
+            "open": clean_number(current_open),
+            "high": clean_number(current_high),
+            "low": clean_number(current_low),
+            "close": clean_number(current_value),
+
             "previousClose": clean_number(previous_close),
             "change": clean_number(change),
             "changePercent": round(change_percent, 2),
@@ -137,6 +204,12 @@ def fetch_single_index(index_id, config, force_refresh=False):
             "featured": config["featured"],
 
             "value": None,
+
+            "open": None,
+            "high": None,
+            "low": None,
+            "close": None,
+
             "previousClose": None,
             "change": None,
             "changePercent": None,
