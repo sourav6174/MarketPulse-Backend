@@ -35,9 +35,9 @@ INDEX_CONFIG = {
         "category": "Volatility",
         "featured": False
     },
-    "niftymidcap100": {
-        "name": "NIFTY MIDCAP 100",
-        "symbol": "NIFTY_MIDCAP_100.NS",
+    "niftynext50": {
+        "name": "NIFTY NEXT 50",
+        "symbol": "^NSMIDCP",
         "category": "Broad Market",
         "featured": False
     },
