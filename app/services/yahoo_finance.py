@@ -47,18 +47,23 @@ def fetch_single_index(index_id, config, force_refresh=False):
         # Get daily history for the latest available
         # trading session and previous close.
         daily = ticker.history(
-            period="5d",
+            period="1mo",
             interval="1d",
             auto_adjust=False,
             actions=False,
-            timeout=15,
+            timeout=20,
             raise_errors=True
         )
+        # Remove rows where closing price is unavailable.
+        daily = daily.dropna(subset=['Close'])
         if daily.empty or "Close" not in daily.columns:
             raise ValueError("No daily closing data returned.")
         daily = daily.dropna(subset=["Close"])
         if len(daily) < 2:
-            raise ValueError("Insufficient daily history.")
+            raise ValueError(
+                f"Insufficient daily history for {config['symbol']}. "
+                f"Rows received: {len(daily)}"
+            )
         latest_daily_date = pd.Timestamp(
             daily.index[-1]
         ).date()
