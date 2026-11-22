@@ -41,10 +41,4 @@ INDEX_CONFIG = {
         "category": "Broad Market",
         "featured": False
     },
-    "niftysmallcap100": {
-        "name": "NIFTY SMALLCAP 100",
-        "symbol": "^CNXSC",
-        "category": "Broad Market",
-        "featured": False
-    }
 }
