@@ -41,4 +41,52 @@ INDEX_CONFIG = {
         "category": "Broad Market",
         "featured": False
     },
+    "niftyfmcg": {
+            "name": "NIFTY FMCG",
+            "symbol": "^CNXFMCG",
+            "category": "Broad Market",
+            "featured": False
+    },
+    "niftypsubank": {
+        "name": "NIFTY PSU BANK",
+        "symbol": "^CNXPSUBANK",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "niftyrealty": {
+        "name": "NIFTY REALTY",
+        "symbol": "^CNXREALTY",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "niftyauto": {
+        "name": "NIFTY AUTO",
+        "symbol": "^CNXAUTO",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "nifty100": {
+        "name": "NIFTY 100",
+        "symbol": "^CNX100",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "nifty500": {
+        "name": "NIFTY 500",
+        "symbol": "^CRSLDX",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "niftymetal": {
+        "name": "NIFTY METAL",
+        "symbol": "^CNXMETAL",
+        "category": "Broad Market",
+        "featured": False
+    },
+    "niftypharma": {
+        "name": "NIFTY PHARMA",
+        "symbol": "^CNXPHARMA",
+        "category": "Broad Market",
+        "featured": False
+    }
 }
