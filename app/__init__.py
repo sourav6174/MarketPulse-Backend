@@ -1,7 +1,13 @@
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
+
+# =====================================
+# IMPORT ROUTES
+# =====================================
+
 from app.routes.index_routes import index_bp
+from app.routes.metals_routes import metals_bp
 
 def create_app():
     application = Flask(__name__)
@@ -14,11 +20,13 @@ def create_app():
         "FRONTEND_ORIGINS",
         "http://127.0.0.1:5500,http://localhost:5500"
     )
+
     allowed_origins = [
         origin.strip().rstrip("/")
         for origin in frontend_origins.split(",")
         if origin.strip()
     ]
+
     CORS(
         application,
         resources={
@@ -33,6 +41,7 @@ def create_app():
     # =====================================
 
     application.register_blueprint(index_bp)
+    application.register_blueprint(metals_bp)
 
     # =====================================
     # HEALTH CHECK
@@ -43,7 +52,7 @@ def create_app():
         return jsonify({
             "success": True,
             "application": "MarketPulse Backend",
-            "module": "Indexes",
+            "module": "Indexes and Metals",
             "status": "online"
         }), 200
 
@@ -61,8 +70,11 @@ def create_app():
                 "/api/health",
                 "/api/indexes",
                 "/api/indexes/list",
-                "/api/indexes/nifty50"
+                "/api/indexes/nifty50",
+                "/api/metals"
             ]
         }), 200
+
     return application
+
 app = create_app()
